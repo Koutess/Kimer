@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#090b10">
+<title>Kimer</title>
+<style>
+:root{--bg:#090b10;--fg:#f2efe8;--dim:#6d7078;--acc:#ff7a1a;--line:#1c1f27}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;
+ font-family:"Arial Black","Helvetica Neue",Arial,sans-serif;font-weight:900}
+#track{position:relative;z-index:1;display:flex;width:500%;height:100%;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.panel{width:20%;height:100%;position:relative;overflow:hidden}
+/* clock */
+#drift{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform 25s ease-in-out}
+#time{font-size:33vw;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+#time small{font-size:8vw;color:var(--acc);letter-spacing:0;margin-left:1.5vw}
+.dg{display:inline-block;min-width:.62em;text-align:center}
+.dg.roll{animation:roll .55s cubic-bezier(.2,.8,.2,1)}
+.cn{display:inline-block;transform:translateY(-.04em);animation:blink 2s ease-in-out infinite}
+#time{animation:enter 1.1s cubic-bezier(.2,.8,.2,1) both}
+#date{animation:enter 1.1s .2s cubic-bezier(.2,.8,.2,1) both}
+#wx{animation:enter 1.1s .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes roll{from{transform:translateY(.28em);opacity:0}to{transform:none;opacity:1}}
+@keyframes blink{50%{opacity:.3}}
+@keyframes enter{from{opacity:0;transform:translateY(2vh) scale(.96)}}
+@keyframes thump{50%{transform:scale(1.07)}}
+#ring.on h1{animation:thump 1s ease-in-out infinite}
+#date{font-size:5vw;margin-top:2vh;color:var(--dim);letter-spacing:-.01em}
+#wx{position:absolute;left:0;right:0;bottom:7vh;display:flex;justify-content:center;align-items:center;gap:2vw;font-size:4vw;color:var(--fg)}
+#wx svg{width:7vw;height:7vw;overflow:visible}
+#wx span{color:var(--dim);font-size:3vw}
+.hint{position:absolute;bottom:2vh;width:100%;text-align:center;font-size:1.6vw;color:#3a3d46}
+#dots{position:fixed;top:2vh;left:0;right:0;display:flex;justify-content:center;gap:1.2vw;z-index:5}
+#dots i{width:1.1vw;height:1.1vw;border-radius:50%;background:var(--line);transition:.3s}
+#dots i.on{background:var(--acc);transform:scale(1.25)}
+/* ambient + fx */
+#amb,#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#amb i{position:absolute;width:60vw;height:60vw;border-radius:50%;background:radial-gradient(circle,var(--acc) 0%,transparent 62%);opacity:.13;animation:orb 28s ease-in-out infinite alternate;will-change:transform}
+#amb i:nth-child(1){left:-18vw;top:-24vw}
+#amb i:nth-child(2){right:-22vw;bottom:-30vw;animation-duration:36s;animation-delay:-9s}
+#amb i:nth-child(3){left:38vw;top:28vh;width:32vw;height:32vw;opacity:.07;animation-duration:44s}
+@keyframes orb{to{transform:translate(12vw,8vh) scale(1.25)}}
+.noamb #amb{display:none}.nosec #time small{display:none}.nowx #wx{display:none}
+#greet{font-size:2.6vw;color:var(--acc);margin-top:1.2vh;animation:enter 1s .3s cubic-bezier(.2,.8,.2,1) both}
+#prog{position:absolute;left:8vw;right:8vw;bottom:3vh;height:.55vh;background:var(--line);border-radius:1vh;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--acc);border-radius:inherit}
+#wx{bottom:8vh}
+/* panel entrance */
+.panel.act .pad>*{animation:enter .7s cubic-bezier(.2,.8,.2,1) both}
+.panel.act .pad>*:nth-child(2){animation-delay:.08s}.panel.act .pad>*:nth-child(3){animation-delay:.16s}
+.al.new{animation:pop .55s cubic-bezier(.2,1.4,.4,1) both}
+.al.gone{animation:gone .3s ease-in forwards}
+@keyframes pop{from{opacity:0;transform:scale(.9) translateY(3vh)}}
+@keyframes gone{to{opacity:0;transform:translateX(8vw) scale(.95)}}
+/* ring ripples */
+#ring{overflow:hidden}#ring h1,#ring .btns{position:relative}
+.rp{position:absolute;inset:0;pointer-events:none}
+.rp i{position:absolute;left:50%;top:50%;width:20vw;height:20vw;margin:-10vw;border:.6vw solid #111;border-radius:50%;opacity:0}
+#ring.on .rp i{animation:ripple 3s ease-out infinite}
+.rp i:nth-child(2){animation-delay:1s!important}.rp i:nth-child(3){animation-delay:2s!important}
+@keyframes ripple{0%{transform:scale(.3);opacity:.5}100%{transform:scale(7);opacity:0}}
+/* focus */
+.focus{display:flex;align-items:center;justify-content:center;gap:7vw;height:calc(100% - 9vh)}
+.ringbox{position:relative;width:46vh;height:46vh}
+.ringbox.flash{animation:thump .9s}
+.ringbox svg{width:100%;height:100%;transform:rotate(-90deg)}
+.trk{fill:none;stroke:var(--line);stroke-width:6}
+.arc{fill:none;stroke:var(--acc);stroke-width:6;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:0;transition:stroke-dashoffset .3s linear,stroke .6s}
+.arc.brk{stroke:#4de8b0}
+.pc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vh}
+.pc .big{font-size:11vh}#pmode{font-size:2.6vh;color:var(--dim)}
+.pside{display:flex;flex-direction:column;align-items:center}
+#pdots{display:flex;gap:1.4vh;margin-bottom:3.5vh}
+#pdots i{width:2.4vh;height:2.4vh;border-radius:50%;background:var(--line);transition:background .4s,transform .45s cubic-bezier(.2,1.4,.4,1)}
+#pdots i.on{background:var(--acc);transform:scale(1.25)}
+/* settings */
+.tg{cursor:pointer}
+.sws{display:flex;gap:2.4vw;margin:1vh 0 4vh}
+.sws b{width:7vw;height:7vw;border-radius:50%;border:.5vw solid transparent;transition:transform .3s cubic-bezier(.2,1.4,.4,1),border-color .3s}
+.sws b.on{transform:scale(1.18);border-color:var(--fg)}
+.set .tg{font-size:2.6vw;color:var(--fg);margin-bottom:2.4vh}
+.ver{font-size:1.8vw;color:var(--dim);margin-top:3vh}
+/* weather icons */
+.sun-r{transform-origin:50% 50%;animation:spin 18s linear infinite}
+.cl{animation:drift 6s ease-in-out infinite alternate}
+.dr{animation:fall 1.1s linear infinite}.dr:nth-child(2){animation-delay:.35s}.dr:nth-child(3){animation-delay:.7s}
+.fg{animation:pulse 3s ease-in-out infinite alternate}.fg:nth-child(2){animation-delay:1s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{to{transform:translateX(5px)}}
+@keyframes fall{0%{transform:translateY(-4px);opacity:0}30%{opacity:1}100%{transform:translateY(12px);opacity:0}}
+@keyframes pulse{to{opacity:.3;transform:translateX(4px)}}
+/* generic panels */
+.pad{padding:7vh 5vw 4vh;height:100%;overflow-y:auto;touch-action:pan-y}
+h2{margin:0 0 2.5vh;font-size:4vw}
+button,input{font:inherit;color:inherit}
+.btn{background:var(--line);border:0;border-radius:1.2vw;padding:1.6vh 2.4vw;font-size:2.4vw;cursor:pointer}
+.btn.pri{background:var(--acc);color:#111}
+.btn:active{transform:scale(.96)}
+/* alarms */
+.al{display:flex;align-items:center;gap:2vw;background:#10131a;border-radius:1.6vw;padding:1.6vh 2vw;margin-bottom:1.6vh}
+.al input[type=time]{background:none;border:0;font-size:5vw;width:19vw;color:var(--fg)}
+.al.off input[type=time]{color:var(--dim)}
+.days{display:flex;gap:.6vw;flex:1}
+.days b{width:3.6vw;height:3.6vw;border-radius:50%;display:grid;place-items:center;font-size:1.7vw;background:var(--line);color:var(--dim)}
+.days b.on{background:var(--acc);color:#111}
+.sw{transition:background .25s;width:7vw;height:3.8vw;border-radius:2vw;background:var(--line);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:.4vw;left:.4vw;width:3vw;height:3vw;border-radius:50%;background:var(--dim);transition:.25s}
+.sw.on{background:var(--acc)}.sw.on::after{left:3.6vw;background:#111}
+.del{background:none;border:0;color:var(--dim);font-size:3vw;padding:0 1vw}
+.row{display:flex;gap:2vw;align-items:center;margin-top:2vh}
+.tg{display:flex;align-items:center;gap:1.5vw;font-size:2.2vw;color:var(--dim)}
+/* timer */
+.cols{display:flex;gap:4vw;height:calc(100% - 9vh)}
+.col{flex:1;background:#10131a;border-radius:2vw;padding:3vh 2.5vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5vh}
+.big{font-size:11vw;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.big.run{color:var(--acc)}
+.btns{display:flex;gap:1.2vw;flex-wrap:wrap;justify-content:center}
+/* overlays */
+#start,#ring{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:4vh;z-index:20;text-align:center}
+#start{display:flex}#ring.on{display:flex;background:var(--acc);color:#111}
+#start h1{font-size:16vw;margin:0;letter-spacing:-.04em}
+#start p{font-size:3vw;color:var(--dim);margin:0}
+#ring h1{font-size:12vw;margin:0}
+#ring .btn{background:#111;color:var(--fg);font-size:3.4vw;padding:2.5vh 4vw}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="start" onclick="boot()"><h1>Kimer</h1><p>Tik om te starten</p></div>
+<div id="ring"><div class="rp"><i></i><i></i><i></i></div><h1 id="rl">Wekker</h1><div class="btns"><button class="btn" onclick="snooze()">Snooze 9 min</button><button class="btn" onclick="stopRing()">Stop</button></div></div>
+<div id="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+
+<div id="amb"><i></i><i></i><i></i></div><canvas id="fx"></canvas>
+<div id="track">
+ <section class="panel">
+  <div id="drift">
+   <div id="time"><span class="dg"></span><span class="dg"></span><span class="cn">:</span><span class="dg"></span><span class="dg"></span><small><span class="dg"></span><span class="dg"></span></small></div>
+   <div id="date"></div><div id="greet"></div>
+  </div>
+  <div id="wx"></div>
+  <div id="prog"><i></i></div><div class="hint" id="hint"></div>
+ </section>
+ <section class="panel"><div class="pad">
+  <h2>Wekkers</h2><div id="alarms"></div>
+  <div class="row"><button class="btn pri" onclick="addAlarm()">+ Wekker</button>
+   <div class="tg" onclick="toggleGentle()"><div class="sw" id="gsw"></div>Rustig wakker worden (volume loopt 60 sec op)</div></div>
+ </div></section>
+ <section class="panel"><div class="pad">
+  <h2>Timer &amp; stopwatch</h2>
+  <div class="cols">
+   <div class="col"><div class="big" id="tdisp">05:00</div>
+    <div class="btns"><button class="btn" onclick="tAdd(60)">+1</button><button class="btn" onclick="tAdd(300)">+5</button><button class="btn" onclick="tAdd(600)">+10</button></div>
+    <div class="btns"><button class="btn pri" id="tgo" onclick="tToggle()">Start</button><button class="btn" onclick="tReset()">Reset</button></div></div>
+   <div class="col"><div class="big" id="sdisp">00:00.0</div>
+    <div class="btns"><button class="btn pri" id="sgo" onclick="sToggle()">Start</button><button class="btn" onclick="sReset()">Reset</button></div></div>
+  </div>
+ </div></section>
+<section class="panel"><div class="pad">
+  <h2>Focus</h2>
+  <div class="focus">
+   <div class="ringbox" id="rbox"><svg viewBox="0 0 120 120"><circle class="trk" cx="60" cy="60" r="52"/><circle id="parc" class="arc" cx="60" cy="60" r="52"/></svg>
+    <div class="pc"><div class="big" id="pdisp">25:00</div><div id="pmode">Focus</div></div></div>
+   <div class="pside"><div id="pdots"><i></i><i></i><i></i><i></i></div>
+    <div class="btns"><button class="btn pri" id="pgo" onclick="pToggle()">Start</button><button class="btn" onclick="pSkip()">Sla over</button><button class="btn" onclick="pReset()">Reset</button></div></div>
+  </div>
+ </div></section>
+ <section class="panel"><div class="pad set">
+  <h2>Instellingen</h2><div id="setbox"></div><div class="ver">Kimer 1.1</div>
+ </div></section>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), p2=n=>String(n).padStart(2,'0');
+const LAT=53.26, LON=6.31;           // weerlocatie (pas aan indien nodig)
+let S={alarms:[],gentle:true,accent:'#ff7a1a',amb:true,fx:true,sec:true,wx:true};
+try{S=Object.assign(S,JSON.parse(localStorage.kimer||'{}'))}catch(e){}
+const save=()=>{try{localStorage.kimer=JSON.stringify(S)}catch(e){}};
+
+/* ---------- start, fullscreen, wake lock, audio ---------- */
+const NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+let ctx,lock;
+if(NATIVE){try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function boot(){
+  $('#start').style.display='none';
+  try{(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen).call(document.documentElement)}catch(e){}
+  try{ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.resume()}catch(e){}
+  wake();
+}
+async function wake(){
+  try{ if(!lock||lock.released){lock=await navigator.wakeLock.request('screen')} }catch(e){}
+  $('#hint').textContent=(NATIVE||(lock&&!lock.released))?'':'Scherm-aan niet beschikbaar: zet "Actief laten" aan in Ontwikkelaarsopties';
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});
+setInterval(()=>{if(!$('#start').style.display||$('#start').style.display==='none')wake()},30000);
+
+/* ---------- swipe ---------- */
+let idx=0,x0=null,y0=0;
+function go(i){idx=Math.max(0,Math.min(4,i));$('#track').style.transform=`translateX(${-idx*20}%)`;
+  document.querySelectorAll('#dots i').forEach((d,k)=>d.classList.toggle('on',k===idx));document.querySelectorAll('.panel').forEach((p,k)=>p.classList.toggle('act',k===idx))}
+document.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5)go(idx+(dx<0?1:-1));x0=null});
+
+/* ---------- clock ---------- */
+let lastSec=-1;
+function tick(){
+  const d=new Date();
+  setTime(d);greet(d);prog(d);
+  if(d.getSeconds()!==lastSec){lastSec=d.getSeconds();
+    $('#date').textContent=d.toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    if(lastSec===0)drift();
+    checkAlarms(d)}
+  timerTick();
+}
+function setTime(d){const s=p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds());
+  document.querySelectorAll('#time .dg').forEach((e,i)=>{if(e.textContent===s[i])return;const first=e.textContent==='';e.textContent=s[i];
+    if(!first&&i<5){e.classList.remove('roll');void e.offsetWidth;e.classList.add('roll')}})}
+function greet(d){const h=d.getHours(),g=h<6?'Nachtbraker':h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';if($('#greet').textContent!==g)$('#greet').textContent=g}
+let pp=0;function prog(d){const p=(d.getSeconds()+d.getMilliseconds()/1000)/60*100,e=$('#prog i');e.style.transition=p<pp?'none':'width .3s linear';e.style.width=p+'%';pp=p}
+function drift(){const r=()=>(Math.random()*2-1)*3;$('#drift').style.transform=`translate(${r()}vw,${r()}vh)`}
+
+/* ---------- weather particles ---------- */
+const fx=$('#fx'),fc=fx.getContext('2d');let parts=[],kind='',curKind='';
+function fxSize(){fx.width=innerWidth/2;fx.height=innerHeight/2}fxSize();addEventListener('resize',fxSize);
+function setFx(k){kind=k;parts=[];fc.clearRect(0,0,fx.width,fx.height);
+  const n=(k==='rain'||k==='storm')?70:k==='snow'?45:0;if(k==='storm')kind='rain';
+  for(let i=0;i<n;i++)parts.push({x:Math.random()*fx.width,y:Math.random()*fx.height,v:kind==='rain'?6+Math.random()*5:.6+Math.random()*1.2,r:1+Math.random()*1.8,ph:Math.random()*6})}
+let lt=0;function loop(t){requestAnimationFrame(loop);if(t-lt<40||!parts.length)return;lt=t;fc.clearRect(0,0,fx.width,fx.height);
+  fc.fillStyle=fc.strokeStyle=kind==='rain'?'rgba(120,170,255,.28)':'rgba(255,255,255,.3)';
+  parts.forEach(p=>{p.y+=p.v;if(kind==='snow')p.x+=Math.sin(t/900+p.ph)*.5;else p.x-=1;
+    if(p.y>fx.height){p.y=-10;p.x=Math.random()*fx.width}
+    fc.beginPath();if(kind==='rain'){fc.moveTo(p.x,p.y);fc.lineTo(p.x+2,p.y-8);fc.stroke()}else{fc.arc(p.x,p.y,p.r,0,6.3);fc.fill()}})}
+requestAnimationFrame(loop);
+
+/* ---------- weather ---------- */
+const W={0:['sun','Helder'],1:['sun','Overwegend helder'],2:['part','Half bewolkt'],3:['cloud','Bewolkt'],45:['fog','Mist'],48:['fog','Mist'],
+ 51:['rain','Motregen'],53:['rain','Motregen'],55:['rain','Motregen'],56:['rain','IJzel'],57:['rain','IJzel'],61:['rain','Regen'],63:['rain','Regen'],65:['rain','Zware regen'],
+ 66:['rain','IJzel'],67:['rain','IJzel'],71:['snow','Sneeuw'],73:['snow','Sneeuw'],75:['snow','Zware sneeuw'],77:['snow','Sneeuw'],
+ 80:['rain','Buien'],81:['rain','Buien'],82:['rain','Zware buien'],85:['snow','Sneeuwbuien'],86:['snow','Sneeuwbuien'],95:['storm','Onweer'],96:['storm','Onweer'],99:['storm','Onweer']};
+const SUN='<g class="sun-r" style="stroke:var(--acc)" stroke-width="3" stroke-linecap="round"><path d="M20 3v6M20 31v6M3 20h6M31 20h6M8 8l4 4M28 28l4 4M32 8l-4 4M12 28l-4 4"/></g><circle cx="20" cy="20" r="8" style="fill:var(--acc)"/>';
+const CLD=(c='#f2efe8',y=0)=>`<g class="cl"><path d="M11 ${27+y}a6 6 0 0 1 1-12 8 8 0 0 1 15 2 5 5 0 0 1 0 10z" fill="${c}"/></g>`;
+const DROPS='<g stroke="#5aa9ff" stroke-width="3" stroke-linecap="round"><path class="dr" d="M14 32v3"/><path class="dr" d="M21 32v3"/><path class="dr" d="M28 32v3"/></g>';
+const FLK='<g fill="#cfe6ff"><circle class="dr" cx="14" cy="33" r="2"/><circle class="dr" cx="21" cy="33" r="2"/><circle class="dr" cx="28" cy="33" r="2"/></g>';
+function icon(k){
+  const m={sun:SUN,part:'<g transform="translate(-6,-6) scale(.8)">'+SUN+'</g>'+CLD('#f2efe8',2),cloud:CLD(),
+   fog:'<g stroke="#6d7078" stroke-width="3" stroke-linecap="round"><path class="fg" d="M8 15h24"/><path class="fg" d="M6 23h24"/><path class="fg" d="M10 31h22"/></g>',
+   rain:CLD('#aab4c4',-4)+DROPS,snow:CLD('#aab4c4',-4)+FLK,storm:CLD('#7a8294',-4)+'<path d="M21 26l-5 8h4l-2 6 7-9h-4z" style="fill:var(--acc)"/>'};
+  return `<svg viewBox="0 0 40 40">${m[k]||m.cloud}</svg>`}
+function showWx(w){if(!w)return;const i=W[w.code]||['cloud','Bewolkt'];
+  curKind=i[0];setFx(S.fx?curKind:'');$('#wx').innerHTML=icon(i[0])+`<div>${Math.round(w.t)}°</div><span>${i[1]}</span>`}
+async function wx(){
+  try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&timezone=auto`);
+    const j=await r.json();const w={t:j.current.temperature_2m,code:j.current.weather_code};
+    localStorage.kimerWx=JSON.stringify(w);showWx(w)}catch(e){}
+}
+try{showWx(JSON.parse(localStorage.kimerWx))}catch(e){}
+wx();setInterval(wx,15*60*1000);
+
+/* ---------- alarms ---------- */
+const DN=['Z','M','D','W','D','V','Z'];  // zo..za
+const ORDER=[1,2,3,4,5,6,0];
+let newIdx=-1;function addAlarm(){newIdx=S.alarms.length;S.alarms.push({t:'07:00',on:true,d:[1,2,3,4,5,6,0],last:''});save();renderAlarms()}
+function renderAlarms(){
+  $('#alarms').innerHTML=S.alarms.length?'':'<p style="color:var(--dim);font-size:2.4vw">Nog geen wekkers. Voeg er een toe.</p>';
+  S.alarms.forEach((a,i)=>{
+    const el=document.createElement('div');el.className='al'+(a.on?'':' off')+(i===newIdx?' new':'');
+    el.innerHTML=`<input type="time" value="${a.t}"><div class="days">${ORDER.map(n=>`<b class="${a.d.includes(n)?'on':''}" data-n="${n}">${DN[n]}</b>`).join('')}</div><div class="sw ${a.on?'on':''}"></div><button class="del">×</button>`;
+    el.querySelector('input').onchange=e=>{a.t=e.target.value;a.last='';save()};
+    el.querySelectorAll('.days b').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;a.d=a.d.includes(n)?a.d.filter(x=>x!==n):[...a.d,n];save();renderAlarms()});
+    el.querySelector('.sw').onclick=()=>{a.on=!a.on;save();renderAlarms()};
+    el.querySelector('.del').onclick=()=>{el.classList.add('gone');setTimeout(()=>{S.alarms.splice(i,1);save();renderAlarms()},300)};
+    $('#alarms').appendChild(el)})
+  newIdx=-1;$('#gsw').classList.toggle('on',S.gentle)}
+function toggleGentle(){S.gentle=!S.gentle;save();renderAlarms()}
+function checkAlarms(d){
+  const hm=p2(d.getHours())+':'+p2(d.getMinutes()),key=d.toDateString()+hm;
+  S.alarms.forEach(a=>{if(a.on&&a.t===hm&&a.d.includes(d.getDay())&&a.last!==key){a.last=key;save();ring('Wekker '+a.t)}})}
+let ringT=null,ringLabel='';
+function ring(label){if(ringT)return;ringLabel=label;$('#rl').textContent=label;$('#ring').classList.add('on');
+  const t0=Date.now();
+  const f=()=>beep(S.gentle?Math.min(1,.04+(Date.now()-t0)/60000):.9);f();ringT=setInterval(f,800)}
+function beep(v){if(!ctx)return;try{ctx.resume();const t=ctx.currentTime;
+  [880,1100].forEach((fr,k)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=fr;
+   g.gain.setValueAtTime(0,t+k*.2);g.gain.linearRampToValueAtTime(.35*v,t+k*.2+.02);g.gain.linearRampToValueAtTime(0,t+k*.2+.16);
+   o.connect(g).connect(ctx.destination);o.start(t+k*.2);o.stop(t+k*.2+.18)})}catch(e){}}
+function stopRing(){clearInterval(ringT);ringT=null;$('#ring').classList.remove('on')}
+function snooze(){const l=ringLabel;stopRing();setTimeout(()=>ring(l),9*60*1000)}
+
+/* ---------- timer & stopwatch ---------- */
+let T={left:300,run:false,end:0},SW={ms:0,run:false,start:0};
+const mmss=s=>p2(Math.floor(s/60))+':'+p2(s%60);
+function tAdd(n){if(T.run)T.end+=n*1000;else T.left+=n;timerTick()}
+function tToggle(){if(T.run){T.left=Math.max(0,Math.ceil((T.end-Date.now())/1000));T.run=false}else if(T.left>0){T.end=Date.now()+T.left*1000;T.run=true}timerTick()}
+function tReset(){T={left:300,run:false,end:0};timerTick()}
+function sToggle(){if(SW.run){SW.ms+=Date.now()-SW.start;SW.run=false}else{SW.start=Date.now();SW.run=true}timerTick()}
+function sReset(){SW={ms:0,run:false,start:0};timerTick()}
+function timerTick(){
+  let left=T.run?Math.max(0,Math.ceil((T.end-Date.now())/1000)):T.left;
+  if(T.run&&left===0){T.run=false;T.left=0;ring('Timer klaar')}
+  $('#tdisp').textContent=mmss(left);$('#tdisp').classList.toggle('run',T.run);$('#tgo').textContent=T.run?'Pauze':'Start';
+  const ms=SW.ms+(SW.run?Date.now()-SW.start:0);
+  $('#sdisp').textContent=mmss(Math.floor(ms/1000))+'.'+Math.floor(ms%1000/100);$('#sdisp').classList.toggle('run',SW.run);$('#sgo').textContent=SW.run?'Stop':'Start';pTick();}
+
+/* ---------- focus (pomodoro) ---------- */
+const PD={focus:1500,break:300,long:900},PN={focus:'Focus',break:'Pauze',long:'Lange pauze'};
+let P={mode:'focus',left:1500,run:false,end:0,done:0};
+function pNext(){if(P.mode==='focus')P.done++;P.mode=P.mode==='focus'?(P.done%4===0?'long':'break'):'focus';P.left=PD[P.mode];if(P.run)P.end=Date.now()+P.left*1000;
+  const b=$('#rbox');b.classList.remove('flash');void b.offsetWidth;b.classList.add('flash')}
+function pToggle(){if(P.run){P.left=Math.max(0,Math.ceil((P.end-Date.now())/1000));P.run=false}else{P.end=Date.now()+P.left*1000;P.run=true}pTick()}
+function pSkip(){pNext();pTick()}
+function pReset(){P={mode:'focus',left:1500,run:false,end:0,done:0};pTick()}
+function pTick(){let left=P.run?Math.max(0,Math.ceil((P.end-Date.now())/1000)):P.left;
+  if(P.run&&left===0){[0,500,1000].forEach(t=>setTimeout(()=>beep(.8),t));pNext();left=P.left}
+  $('#pdisp').textContent=mmss(left);$('#pmode').textContent=PN[P.mode];$('#pgo').textContent=P.run?'Pauze':'Start';
+  $('#parc').style.strokeDashoffset=326.7*(1-left/PD[P.mode]);$('#parc').classList.toggle('brk',P.mode!=='focus');
+  const n=P.mode==='long'?4:P.done%4;document.querySelectorAll('#pdots i').forEach((e,i)=>e.classList.toggle('on',i<n))}
+
+/* ---------- settings ---------- */
+const COLS=['#ff7a1a','#4de8b0','#ff5d9e','#5aa9ff','#ffd23f'];
+const TG=[['amb','Achtergrond-gloed'],['fx','Regen- en sneeuwanimatie'],['sec','Seconden tonen'],['wx','Weer tonen']];
+function applySet(){document.documentElement.style.setProperty('--acc',S.accent);
+  document.body.classList.toggle('noamb',!S.amb);document.body.classList.toggle('nosec',!S.sec);document.body.classList.toggle('nowx',!S.wx);
+  setFx(S.fx?curKind:'')}
+function renderSet(){const box=$('#setbox');
+  box.innerHTML='<div class="sws">'+COLS.map(c=>`<b data-c="${c}" style="background:${c}" class="${c===S.accent?'on':''}"></b>`).join('')+'</div>'+
+   TG.map(([k,l])=>`<div class="tg" data-k="${k}"><div class="sw ${S[k]?'on':''}"></div>${l}</div>`).join('');
+  box.querySelectorAll('.sws b').forEach(b=>b.onclick=()=>{S.accent=b.dataset.c;save();applySet();box.querySelectorAll('.sws b').forEach(x=>x.classList.toggle('on',x===b))});
+  box.querySelectorAll('.tg').forEach(t=>t.onclick=()=>{const k=t.dataset.k;S[k]=!S[k];save();applySet();t.querySelector('.sw').classList.toggle('on',S[k])})}
+renderSet();applySet();
+document.querySelector('.panel').classList.add('act');
+
+if(NATIVE)$('#start').style.display='none';
+renderAlarms();setInterval(tick,250);tick();drift();
+</script>
+</body>
+</html>

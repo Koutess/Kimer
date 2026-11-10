@@ -1,0 +1,7 @@
+{
+  "appId": "com.kimer.app",
+  "appName": "Kimer",
+  "webDir": "www",
+  "backgroundColor": "#090b10",
+  "android": { "backgroundColor": "#090b10" }
+}
